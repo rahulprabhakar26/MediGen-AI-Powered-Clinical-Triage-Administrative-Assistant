@@ -62,7 +62,6 @@ cd backend
 ./gradlew build
 ./gradlew bootRun
 ```
-
 ### Frontend Setup
 ```bash
 cd frontend
