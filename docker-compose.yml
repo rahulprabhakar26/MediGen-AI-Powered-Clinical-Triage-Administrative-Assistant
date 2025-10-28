@@ -1,0 +1,135 @@
+version: '3.8'
+
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: medigen-mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_AUTH_DB:-medigen_auth}
+    ports:
+      - "${MYSQL_PORT:-3306}:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    networks:
+      - medigen-network
+
+  mongodb:
+    image: mongo:4.4
+    container_name: medigen-mongodb
+    ports:
+      - "${MONGODB_PORT:-27017}:27017"
+    volumes:
+      - mongodb_data:/data/db
+    networks:
+      - medigen-network
+
+  discovery-server:
+    build: ./backend/discovery-server
+    container_name: medigen-discovery-server
+    ports:
+      - "8761:8761"
+    networks:
+      - medigen-network
+
+  gateway-service:
+    build: ./backend/gateway-service
+    container_name: medigen-gateway
+    ports:
+      - "8080:8080"
+    depends_on:
+      - discovery-server
+    networks:
+      - medigen-network
+
+  auth-service:
+    build: ./backend/auth-service
+    container_name: medigen-auth-service
+    ports:
+      - "${AUTH_PORT:-8081}:8081"
+    depends_on:
+      - discovery-server
+      - mysql
+    environment:
+      MYSQL_HOST: mysql
+      MYSQL_PORT: 3306
+      MYSQL_USERNAME: ${MYSQL_USERNAME:-root}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+      MYSQL_AUTH_DB: ${MYSQL_AUTH_DB:-medigen_auth}
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_EXPIRATION: ${JWT_EXPIRATION:-86400000}
+      EUREKA_SERVER_URL: http://discovery-server:8761/eureka/
+    networks:
+      - medigen-network
+
+  patient-service:
+    build: ./backend/patient-service
+    container_name: medigen-patient-service
+    ports:
+      - "${PATIENT_PORT:-8082}:8082"
+    depends_on:
+      - discovery-server
+      - mysql
+    environment:
+      MYSQL_HOST: mysql
+      MYSQL_PORT: 3306
+      MYSQL_USERNAME: ${MYSQL_USERNAME:-root}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+      MYSQL_PATIENT_DB: ${MYSQL_PATIENT_DB:-medigen_patient}
+      EUREKA_SERVER_URL: http://discovery-server:8761/eureka/
+    networks:
+      - medigen-network
+
+  ai-service:
+    build: ./backend/ai-service
+    container_name: medigen-ai-service
+    ports:
+      - "${AI_PORT:-8083}:8083"
+    depends_on:
+      - discovery-server
+      - mongodb
+    environment:
+      MONGODB_URI: mongodb://mongodb:27017/${MONGODB_DATABASE:-medigen_ai}
+      GEMINI_API_KEY: ${GEMINI_API_KEY}
+      GEMINI_API_URL: ${GEMINI_API_URL:-https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent}
+      EUREKA_SERVER_URL: http://discovery-server:8761/eureka/
+    networks:
+      - medigen-network
+
+  payment-service:
+    build: ./backend/payment-service
+    container_name: medigen-payment-service
+    ports:
+      - "${PAYMENT_PORT:-8084}:8084"
+    depends_on:
+      - discovery-server
+      - mysql
+    environment:
+      MYSQL_HOST: mysql
+      MYSQL_PORT: 3306
+      MYSQL_USERNAME: ${MYSQL_USERNAME:-root}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+      MYSQL_PAYMENT_DB: ${MYSQL_PAYMENT_DB:-medigen_payment}
+      RAZORPAY_KEY_ID: ${RAZORPAY_KEY_ID}
+      RAZORPAY_KEY_SECRET: ${RAZORPAY_KEY_SECRET}
+      EUREKA_SERVER_URL: http://discovery-server:8761/eureka/
+    networks:
+      - medigen-network
+
+  frontend:
+    build: ./frontend
+    container_name: medigen-frontend
+    ports:
+      - "3000:3000"
+    depends_on:
+      - gateway-service
+    networks:
+      - medigen-network
+
+volumes:
+  mysql_data:
+  mongodb_data:
+
+networks:
+  medigen-network:
+    driver: bridge

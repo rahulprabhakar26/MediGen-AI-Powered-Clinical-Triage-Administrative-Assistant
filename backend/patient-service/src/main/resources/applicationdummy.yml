@@ -1,0 +1,40 @@
+# Patient Service Configuration Template
+# Copy this content to application.yml and modify as needed
+
+server:
+  port: ${PATIENT_PORT:8082}
+
+spring:
+  application:
+    name: patient-service
+  datasource:
+    url: jdbc:mysql://${MYSQL_HOST:localhost}:${MYSQL_PORT:3306}/${MYSQL_PATIENT_DB:medigen_patient}?createDatabaseIfNotExist=true
+    username: ${MYSQL_USERNAME:root}
+    password: ${MYSQL_PASSWORD:YOUR_MYSQL_PASSWORD}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MySQL8Dialect
+
+eureka:
+  client:
+    service-url:
+      defaultZone: ${EUREKA_SERVER_URL:http://localhost:8761/eureka}
+  instance:
+    prefer-ip-address: true
+
+feign:
+  client:
+    config:
+      default:
+        connectTimeout: 5000
+        readTimeout: 5000
+
+# REPLACE THESE WITH YOUR ACTUAL VALUES:
+# - YOUR_MYSQL_PASSWORD: Your MySQL root password
+# Or use .env file for better security
+

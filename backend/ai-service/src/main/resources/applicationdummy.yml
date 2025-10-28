@@ -1,0 +1,37 @@
+# AI Service Configuration Template
+# Copy this content to application.yml and modify as needed
+
+server:
+  port: ${AI_PORT:8083}
+
+spring:
+  application:
+    name: ai-service
+  data:
+    mongodb:
+      host: ${MONGODB_HOST:localhost}
+      port: ${MONGODB_PORT:27017}
+      database: ${MONGODB_DATABASE:medigen_ai}
+      uri: ${MONGODB_URI:mongodb://localhost:27017/medigen_ai}
+
+eureka:
+  client:
+    service-url:
+      defaultZone: ${EUREKA_SERVER_URL:http://localhost:8761/eureka}
+  instance:
+    prefer-ip-address: true
+
+gemini:
+  api:
+    key: ${GEMINI_API_KEY:YOUR_GEMINI_API_KEY}
+    url: ${GEMINI_API_URL:https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent}
+
+jwt:
+  secret: ${JWT_SECRET:your-secret-key-min-32-characters-long}
+  expiration: ${JWT_EXPIRATION:86400000}
+
+# REPLACE THESE WITH YOUR ACTUAL VALUES:
+# - YOUR_GEMINI_API_KEY: Get from https://makersuite.google.com/app/apikey
+# - JWT_SECRET: Generate using: openssl rand -base64 32
+# Or use .env file for better security
+
